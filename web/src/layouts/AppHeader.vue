@@ -2,6 +2,7 @@
 import { Expand, Fold } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { logoutApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 import { endSession } from '@/utils/session'
 
@@ -20,9 +21,14 @@ const user = useUserStore()
 const title = computed(() => route.meta.title ?? '')
 const nickname = computed(() => user.profile?.nickname ?? '用户')
 
-function logout() {
+async function logout() {
+  try {
+    await logoutApi()
+  } catch {
+    // token 已经失效时，本地仍然要退出。
+  }
   endSession(router)
-  void router.push('/login')
+  await router.push('/login')
 }
 </script>
 

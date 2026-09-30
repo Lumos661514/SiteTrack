@@ -51,10 +51,15 @@ orderRouter.get(
         AND (? = '' OR status = ?)
     `
     const params = [orderNo, orderNo, buyer, buyer, status, status]
-    const [countRows] = await pool.query<RowDataPacket[]>(
-      `SELECT COUNT(*) AS total FROM orders ${where}`,
-      params,
-    )
+    const withTotal = req.query.withTotal === '1'
+    let total: number | undefined
+    if (withTotal) {
+      const [countRows] = await pool.query<RowDataPacket[]>(
+        `SELECT COUNT(*) AS total FROM orders ${where}`,
+        params,
+      )
+      total = Number(countRows[0]?.total ?? 0)
+    }
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT id, order_no, buyer_name, amount, status, address, created_at
        FROM orders
@@ -67,7 +72,7 @@ orderRouter.get(
     res.json({
       data: {
         list: rows.map((row) => toOrder(row, perms)),
-        total: Number(countRows[0]?.total ?? 0),
+        total,
       },
     })
   }),

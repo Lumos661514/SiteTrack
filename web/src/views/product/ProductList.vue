@@ -15,18 +15,25 @@ import ProductSearch from '@/views/product/ProductSearch.vue'
 import ProductTable from '@/views/product/ProductTable.vue'
 
 const emptyQuery = (): ProductQuery => ({ keyword: '', status: '', categoryId: '' })
-const query = reactive<ProductQuery>(emptyQuery())
+const draft = reactive<ProductQuery>(emptyQuery())
+const applied = shallowRef<ProductQuery>(emptyQuery())
 const categories = shallowRef<Category[]>([])
 const formVisible = shallowRef(false)
 const editingId = shallowRef<number | null>(null)
 const saving = shallowRef(false)
 
 const { list, total, page, pageSize, loading, load, search, changePage, changeSize } = useTable<Product>(
-  (pageNo, size) => fetchProducts(query, pageNo, size),
+  (pageNo, size) => fetchProducts(applied.value, pageNo, size),
 )
 
+function onSearch() {
+  applied.value = { ...draft }
+  return search()
+}
+
 function reset() {
-  Object.assign(query, emptyQuery())
+  Object.assign(draft, emptyQuery())
+  applied.value = emptyQuery()
   return search()
 }
 
@@ -71,7 +78,7 @@ onMounted(async () => {
 
 <template>
   <section class="panel">
-    <ProductSearch v-model="query" :categories="categories" @search="search()" @reset="reset" />
+    <ProductSearch v-model="draft" :categories="categories" @search="onSearch()" @reset="reset" />
   </section>
   <section class="panel">
     <div class="toolbar">

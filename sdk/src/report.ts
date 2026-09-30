@@ -35,29 +35,63 @@ export function createReporter(reportUrl: string, appKey: string): Reporter {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events.slice(-MAX_RETRY)))
   }
 
-  function flush(useBeacon = false) {
-    const events = readRetry().concat(queue.splice(0, queue.length)).slice(-MAX_RETRY)
-    if (!events.length) return
-    writeRetry([])
+  function clip(event: MonitorEvent): MonitorEvent {
+    return {
+      ...event,
+      message: event.message?.slice(0, 500),
+      stack: event.stack?.slice(0, 2000),
+    }
+  }
+
+  function splitBySize(events: MonitorEvent[], limit = 60_000) {
+    const batches: MonitorEvent[][] = []
+    let current: MonitorEvent[] = []
+    let size = 2
+    for (const event of events) {
+      const bytes = JSON.stringify(event).length
+      if (current.length && size + bytes > limit) {
+        batches.push(current)
+        current = []
+        size = 2
+      }
+      current.push(event)
+      size += bytes
+    }
+    if (current.length) batches.push(current)
+    return batches
+  }
+
+  function remember(events: MonitorEvent[]) {
+    writeRetry(readRetry().concat(events))
+  }
+
+  function send(events: MonitorEvent[], useBeacon: boolean) {
     const body = JSON.stringify({ appKey, events })
-    if (useBeacon && typeof navigator.sendBeacon === 'function') {
+    if (useBeacon && typeof navigator.sendBeacon === 'function' && body.length <= 60_000) {
       const accepted = navigator.sendBeacon(
         reportUrl,
         new Blob([body], { type: 'application/json' }),
       )
-      if (!accepted) writeRetry(events)
+      if (!accepted) remember(events)
       return
     }
     fetch(reportUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
-      keepalive: true,
+      keepalive: body.length <= 60_000,
     })
       .then((response) => {
-        if (!response.ok) writeRetry(events)
+        if (response.status >= 500) remember(events)
       })
-      .catch(() => writeRetry(events))
+      .catch(() => remember(events))
+  }
+
+  function flush(useBeacon = false) {
+    const events = readRetry().concat(queue.splice(0, queue.length)).slice(-MAX_RETRY).map(clip)
+    if (!events.length) return
+    writeRetry([])
+    for (const batch of splitBySize(events)) send(batch, useBeacon)
   }
 
   function enqueue(event: MonitorEvent) {

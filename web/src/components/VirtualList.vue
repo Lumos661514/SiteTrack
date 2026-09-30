@@ -36,8 +36,15 @@ watch([start, end], () => {
   emit('range', start.value, end.value)
 })
 
+let ticking = false
 function onScroll(event: Event) {
-  scrollTop.value = (event.target as HTMLElement).scrollTop
+  if (ticking) return
+  const target = event.target as HTMLElement
+  ticking = true
+  requestAnimationFrame(() => {
+    scrollTop.value = target.scrollTop
+    ticking = false
+  })
 }
 
 function measure() {
@@ -52,12 +59,17 @@ function scrollTo(top: number) {
 
 defineExpose({ scrollTo })
 
+let observer: ResizeObserver | null = null
+
 onMounted(() => {
   measure()
   emit('range', start.value, end.value)
-  const observer = new ResizeObserver(measure)
+  observer = new ResizeObserver(measure)
   if (container.value) observer.observe(container.value)
-  onUnmounted(() => observer.disconnect())
+})
+
+onUnmounted(() => {
+  observer?.disconnect()
 })
 </script>
 

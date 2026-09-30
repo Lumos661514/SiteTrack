@@ -10,11 +10,17 @@ interface Option {
 }
 
 const productId = shallowRef<number | ''>('')
+const appliedProductId = shallowRef<number | ''>('')
 const products = shallowRef<Option[]>([])
 
 const { list, total, page, pageSize, loading, load, search, changePage } = useTable<StockLog>(
-  (pageNo, size) => fetchStockLogs(productId.value, pageNo, size),
+  (pageNo, size) => fetchStockLogs(appliedProductId.value, pageNo, size),
 )
+
+function onSearch() {
+  appliedProductId.value = productId.value
+  return search()
+}
 
 onMounted(async () => {
   const [productPage] = await Promise.all([fetchProducts({ keyword: '', status: '', categoryId: '' }, 1, 50), load()])
@@ -24,14 +30,14 @@ onMounted(async () => {
 
 <template>
   <section class="panel">
-    <el-form inline @submit.prevent="search()">
+    <el-form inline @submit.prevent="onSearch()">
       <el-form-item label="商品">
         <el-select v-model="productId" clearable placeholder="全部" style="width: 200px">
           <el-option v-for="item in products" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="search()">查询</el-button>
+        <el-button type="primary" @click="onSearch()">查询</el-button>
       </el-form-item>
     </el-form>
   </section>

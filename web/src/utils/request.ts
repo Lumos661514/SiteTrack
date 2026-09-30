@@ -3,6 +3,7 @@
 // 为什么这样设计：请求拦截器统一加 token，响应拦截器统一处理错误和 401。重复请求用 AbortController 取消上一次。业务代码只拿 data。
 // 401 不在这里直接 import store，而是注册回调，避免 request 和 store 循环依赖。
 
+import { getMonitor } from '@sitetrack/sdk'
 import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import { TOKEN_KEY } from '@/constants/auth'
@@ -13,6 +14,7 @@ interface RequestConfig extends InternalAxiosRequestConfig {
 
 const pending = new Map<string, AbortController>()
 let onUnauthorized = () => {}
+let handling401 = false
 
 export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler
@@ -21,7 +23,10 @@ export function setUnauthorizedHandler(handler: () => void) {
 function stableString(value: unknown) {
   if (value == null || value === '') return ''
   if (typeof value === 'string') return value
-  if (typeof FormData !== 'undefined' && value instanceof FormData) return 'form'
+  if (typeof FormData !== 'undefined' && value instanceof FormData) {
+    const names = [...value.keys()].join(',')
+    return `form:${names}:${value.get('file') instanceof File ? (value.get('file') as File).name : ''}`
+  }
   return JSON.stringify(value)
 }
 
@@ -31,8 +36,9 @@ function buildKey(config: InternalAxiosRequestConfig) {
 }
 
 // 【面试重点】相同请求未完成时取消上一次
-// 解决的问题：搜索或提交连点时，慢的旧响应后返回，会把新结果盖掉。
-// 为什么这样设计：用方法、地址、参数组成键。同一个键只留最新一次，旧的 AbortController.abort()。取消产生的错误不弹提示。
+// 解决的问题：同一个接口、同一组参数连点时，慢的响应后到会盖住先到的那次。
+// 为什么这样设计：键里带上方法和参数，只取消完全相同的请求。关键词不同的搜索不会互相取消，那种竞态由 useTable 的请求序号处理。Abort 只让前端不再等待，服务端可能已经执行，所以防重复提交要靠按钮 loading，不能只靠取消请求。
+// FormData 不能都用同一个键，否则连续上传不同图片会把前一张取消掉。
 function addPending(config: RequestConfig) {
   const key = buildKey(config)
   pending.get(key)?.abort()
@@ -80,8 +86,19 @@ instance.interceptors.response.use(
       const message =
         (error.response?.data as { message?: string } | undefined)?.message ??
         (status ? `请求失败（${status}）` : '网络异常，请稍后重试')
+      if (!error.response || (status != null && status >= 500)) {
+        getMonitor()?.captureException(error, 'api')
+      }
       if (status === 401) {
-        onUnauthorized()
+        if (!handling401) {
+          handling401 = true
+          ElMessage.error('登录已过期，请重新登录')
+          onUnauthorized()
+          window.setTimeout(() => {
+            handling401 = false
+          }, 1000)
+        }
+        return Promise.reject(error)
       }
       ElMessage.error(message)
     }

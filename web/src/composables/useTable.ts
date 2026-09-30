@@ -15,15 +15,18 @@ export function useTable<T>(fetcher: (page: number, pageSize: number) => Promise
   const page = shallowRef(1)
   const pageSize = shallowRef(10)
   const loading = shallowRef(false)
+  let seq = 0
 
   async function load() {
+    const current = ++seq
     loading.value = true
     try {
       const result = await fetcher(page.value, pageSize.value)
+      if (current !== seq) return
       list.value = result.list
       total.value = result.total
     } finally {
-      loading.value = false
+      if (current === seq) loading.value = false
     }
   }
 

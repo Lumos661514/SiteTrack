@@ -17,7 +17,16 @@ interface EventTimingEntry extends PerformanceEntry {
 export function listenPerformance(enqueue: (event: MonitorEvent) => void, page: () => string) {
   const latest: Partial<Record<MetricName, number>> = {}
 
+  let boundPage = page()
+  const landingPage = boundPage
+
   function report(name: MetricName, value: number) {
+    const current = page()
+    if ((name === 'CLS' || name === 'INP') && current !== boundPage) {
+      latest.CLS = 0
+      latest.INP = 0
+      boundPage = current
+    }
     if (name === 'INP' && (latest.INP ?? 0) > value) return
     if (name === 'FCP' && latest.FCP != null) return
     latest[name] = value
@@ -25,17 +34,21 @@ export function listenPerformance(enqueue: (event: MonitorEvent) => void, page: 
       kind: 'metric',
       name,
       value: Math.round(value * 1000) / 1000,
-      page: page(),
+      page: name === 'FCP' || name === 'LCP' ? landingPage : current,
       time: Date.now(),
     })
   }
 
-  function observe(type: string, handler: (entry: PerformanceEntry) => void) {
+  function observe(
+    type: string,
+    handler: (entry: PerformanceEntry) => void,
+    extra?: Record<string, unknown>,
+  ) {
     try {
       const observer = new PerformanceObserver((list) => {
         list.getEntries().forEach(handler)
       })
-      observer.observe({ type, buffered: true } as PerformanceObserverInit)
+      observer.observe({ type, buffered: true, ...extra } as PerformanceObserverInit)
     } catch {
       // 老浏览器没有对应 entry type 时跳过，不影响其他指标。
     }
@@ -52,9 +65,13 @@ export function listenPerformance(enqueue: (event: MonitorEvent) => void, page: 
     if (shift.hadRecentInput) return
     report('CLS', (latest.CLS ?? 0) + shift.value)
   })
-  observe('event', (entry) => {
-    const timing = entry as EventTimingEntry
-    if (!timing.interactionId) return
-    report('INP', timing.duration)
-  })
+  observe(
+    'event',
+    (entry) => {
+      const timing = entry as EventTimingEntry
+      if (!timing.interactionId) return
+      report('INP', timing.duration)
+    },
+    { durationThreshold: 40 },
+  )
 }

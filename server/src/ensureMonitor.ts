@@ -1,6 +1,15 @@
 import { pool } from './db'
 
 /** 监控表在第 4 阶段才用到，启动时补建，避免重跑全量种子把订单清掉。 */
+export async function ensureUserColumns() {
+  const [rows] = await pool.query<import('mysql2').RowDataPacket[]>(
+    `SHOW COLUMNS FROM users LIKE 'token_version'`,
+  )
+  if (!rows.length) {
+    await pool.query('ALTER TABLE users ADD COLUMN token_version INT NOT NULL DEFAULT 0')
+  }
+}
+
 export async function ensureMonitorTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS monitor_errors (

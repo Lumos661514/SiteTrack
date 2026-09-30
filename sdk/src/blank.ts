@@ -12,16 +12,31 @@ const POINTS = [
   [0.75, 0.7],
 ]
 
+const WRAPPERS = ['html', 'body', '#app']
+
+function isWrapper(element: Element | null) {
+  return !element || WRAPPERS.some((selector) => element.matches(selector))
+}
+
+export function isBlankScreen() {
+  return POINTS.every(([xRate, yRate]) => {
+    const x = window.innerWidth * xRate
+    const y = window.innerHeight * yRate
+    return isWrapper(document.elementFromPoint(x, y))
+  })
+}
+
 export function detectBlank(enqueue: (event: MonitorEvent) => void, page: () => string) {
-  window.setTimeout(() => {
+  let tries = 0
+  const timer = window.setInterval(() => {
+    tries += 1
     if (document.visibilityState === 'hidden') return
-    const blank = POINTS.every(([xRate, yRate]) => {
-      const x = window.innerWidth * xRate
-      const y = window.innerHeight * yRate
-      const element = document.elementFromPoint(x, y)
-      return !element || element === document.body || element === document.documentElement
-    })
-    if (!blank) return
+    if (!isBlankScreen()) {
+      window.clearInterval(timer)
+      return
+    }
+    if (tries < 3) return
+    window.clearInterval(timer)
     enqueue({
       kind: 'error',
       type: 'blank',
@@ -29,5 +44,5 @@ export function detectBlank(enqueue: (event: MonitorEvent) => void, page: () => 
       page: page(),
       time: Date.now(),
     })
-  }, 4000)
+  }, 1000)
 }

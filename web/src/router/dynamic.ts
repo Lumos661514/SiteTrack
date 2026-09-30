@@ -23,6 +23,11 @@ const pendingDesc: Record<string, string> = {
 }
 
 const NOT_FOUND = 'not-found'
+let notFoundPath = '/dashboard'
+
+export function setNotFoundRedirect(path: string) {
+  notFoundPath = path || '/dashboard'
+}
 
 function walk(nodes: MenuNode[], visit: (node: MenuNode) => void) {
   for (const node of nodes) {
@@ -49,7 +54,7 @@ export function addDynamicRoutes(router: Router, menus: MenuNode[]) {
   router.addRoute({
     path: '/:pathMatch(.*)*',
     name: NOT_FOUND,
-    redirect: '/dashboard',
+    redirect: () => notFoundPath,
   })
   names.push(NOT_FOUND)
   return names

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 import type { Router } from 'vue-router'
 import { fetchAccessApi, type MenuNode } from '@/api/auth'
-import { addDynamicRoutes, removeDynamicRoutes } from '@/router/dynamic'
+import { addDynamicRoutes, removeDynamicRoutes, setNotFoundRedirect } from '@/router/dynamic'
 
 export function firstMenuPath(nodes: MenuNode[]): string {
   for (const node of nodes) {
@@ -30,6 +30,7 @@ export const usePermissionStore = defineStore('permission', () => {
     menus.value = data.menus
     permissions.value = data.permissions
     homePath.value = firstMenuPath(data.menus)
+    setNotFoundRedirect(homePath.value)
     routeNames.value = addDynamicRoutes(router, data.menus)
     loaded.value = true
   }

@@ -16,7 +16,15 @@ export function createApp() {
   app.use(cors())
   app.use(express.json({ limit: '1mb' }))
 
-  app.use('/api/uploads', express.static(uploadDir))
+  app.use(
+    '/api/uploads',
+    express.static(uploadDir, {
+      setHeaders(res) {
+        res.setHeader('X-Content-Type-Options', 'nosniff')
+        res.setHeader('Content-Disposition', 'inline')
+      },
+    }),
+  )
   app.get('/api/health', (_req, res) => {
     res.json({ data: { ok: true } })
   })

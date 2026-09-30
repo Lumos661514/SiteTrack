@@ -28,13 +28,14 @@ export interface OrderQuery {
   status: string
 }
 
-export function fetchOrders(query: OrderQuery, offset: number, limit: number) {
-  return http.get<{ list: OrderRow[]; total: number }>('/orders', {
+export function fetchOrders(query: OrderQuery, offset: number, limit: number, withTotal = false) {
+  return http.get<{ list: OrderRow[]; total?: number }>('/orders', {
     orderNo: query.orderNo,
     buyer: query.buyer,
     status: query.status,
     offset,
     limit,
+    withTotal: withTotal ? '1' : '0',
   })
 }
 

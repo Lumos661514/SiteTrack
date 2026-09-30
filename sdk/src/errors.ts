@@ -10,15 +10,23 @@ interface CaptureContext {
   reportUrl: string
 }
 
+const seen = new Map<string, number>()
+
 function pushError(context: CaptureContext, event: Omit<MonitorEvent, 'kind' | 'page' | 'time'>) {
-  const message = event.message ?? ''
-  if (message.includes(context.reportUrl)) return
+  const message = (event.message ?? '').slice(0, 500)
+  if (!message || message.includes(context.reportUrl)) return
+  const stack = event.stack?.slice(0, 2000)
+  const key = `${event.type}|${message}|${stack?.split('\n')[1] ?? ''}`
+  const last = seen.get(key) ?? 0
+  if (Date.now() - last < 60_000) return
+  seen.set(key, Date.now())
   context.enqueue({
     kind: 'error',
     page: context.page(),
     time: Date.now(),
     ...event,
     message,
+    stack,
   })
 }
 
@@ -55,9 +63,9 @@ export function listenErrors(context: CaptureContext) {
   })
 
   return {
-    captureException(error: unknown) {
+    captureException(error: unknown, type: 'js' | 'api' = 'js') {
       const normalized = error instanceof Error ? error : new Error(String(error))
-      pushError(context, { type: 'js', message: normalized.message, stack: normalized.stack })
+      pushError(context, { type, message: normalized.message, stack: normalized.stack })
     },
   }
 }

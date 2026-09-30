@@ -1,4 +1,5 @@
 import { initMonitor } from '@sitetrack/sdk'
+import axios from 'axios'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import ElementPlus from 'element-plus'
@@ -19,6 +20,7 @@ const monitor = initMonitor({
 
 const app = createApp(App)
 app.config.errorHandler = (error) => {
+  if (axios.isCancel(error) || axios.isAxiosError(error)) return
   console.error(error)
   monitor.captureException(error)
 }

@@ -19,7 +19,7 @@ interface IncomingEvent {
   time?: number
 }
 
-const errorTypes = new Set(['js', 'promise', 'resource', 'blank'])
+const errorTypes = new Set(['js', 'promise', 'resource', 'blank', 'api'])
 const metricNames = new Set(['FCP', 'LCP', 'INP', 'CLS'])
 
 function formatDate(time: number) {

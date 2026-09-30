@@ -23,6 +23,7 @@ const acting = shallowRef(false)
 const virtualRef = useTemplateRef<{ scrollTo: (top: number) => void }>('virtual')
 let generation = 0
 const inflight = new Set<string>()
+let applied: OrderQuery = { orderNo: '', buyer: '', status: '' }
 
 function appliedQuery(): OrderQuery {
   return {
@@ -38,10 +39,12 @@ async function refresh() {
   inflight.clear()
   loading.value = true
   try {
-    const data = await fetchOrders(appliedQuery(), 0, CHUNK)
+    applied = appliedQuery()
+    const data = await fetchOrders(applied, 0, CHUNK, true)
     if (current !== generation) return
-    total.value = data.total
-    const next = new Array<OrderRow | undefined>(data.total)
+    const nextTotal = data.total ?? 0
+    total.value = nextTotal
+    const next = new Array<OrderRow | undefined>(nextTotal)
     data.list.forEach((item, index) => {
       next[index] = item
     })
@@ -72,7 +75,7 @@ async function onRange(start: number, end: number) {
   if (inflight.has(key)) return
   inflight.add(key)
   try {
-    const data = await fetchOrders(appliedQuery(), chunkStart, chunkEnd - chunkStart)
+    const data = await fetchOrders(applied, chunkStart, chunkEnd - chunkStart)
     if (current !== generation) return
     const next = rows.value.slice()
     data.list.forEach((item, index) => {

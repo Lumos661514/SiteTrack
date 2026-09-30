@@ -1,6 +1,7 @@
 export interface TokenPayload {
   uid: number
   roleCode: string
+  ver: number
 }
 
 export interface PublicUser {

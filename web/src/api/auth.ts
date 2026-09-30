@@ -14,6 +14,10 @@ export function profileApi() {
   return http.get<UserProfile>('/auth/me')
 }
 
+export function logoutApi() {
+  return http.post<{ ok: boolean }>('/auth/logout')
+}
+
 export interface MenuNode {
   id: number
   name: string

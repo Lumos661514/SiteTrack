@@ -2,15 +2,12 @@ import type { MonitorEvent } from './types'
 
 export function listenPageView(enqueue: (event: MonitorEvent) => void, page: () => string) {
   let lastPage = ''
-  let lastAt = 0
 
   function report() {
     const current = page()
-    const now = Date.now()
-    if (current === lastPage && now - lastAt < 400) return
+    if (current === lastPage) return
     lastPage = current
-    lastAt = now
-    enqueue({ kind: 'pv', page: current, time: now })
+    enqueue({ kind: 'pv', page: current, time: Date.now() })
   }
 
   const rawPush = history.pushState.bind(history)

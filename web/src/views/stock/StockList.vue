@@ -5,6 +5,8 @@ import { useTable } from '@/composables/useTable'
 
 const keyword = shallowRef('')
 const lowOnly = shallowRef(false)
+const appliedKeyword = shallowRef('')
+const appliedLowOnly = shallowRef(false)
 const lowCount = shallowRef(0)
 const visible = shallowRef(false)
 const saving = shallowRef(false)
@@ -13,11 +15,17 @@ const form = reactive({ type: 'in' as 'in' | 'out', quantity: 1, remark: '' })
 
 const { list, total, page, pageSize, loading, load, search, changePage } = useTable<StockRow>(
   async (pageNo, size) => {
-    const data = await fetchStock(keyword.value.trim(), lowOnly.value, pageNo, size)
+    const data = await fetchStock(appliedKeyword.value, appliedLowOnly.value, pageNo, size)
     lowCount.value = data.lowCount
     return data
   },
 )
+
+function onSearch() {
+  appliedKeyword.value = keyword.value.trim()
+  appliedLowOnly.value = lowOnly.value
+  return search()
+}
 
 function openMove(row: StockRow, type: 'in' | 'out') {
   current.value = row
@@ -51,7 +59,7 @@ onMounted(() => {
 
 <template>
   <section class="panel">
-    <el-form inline @submit.prevent="search()">
+    <el-form inline @submit.prevent="onSearch()">
       <el-form-item label="商品">
         <el-input v-model="keyword" clearable placeholder="名称" />
       </el-form-item>
@@ -59,7 +67,7 @@ onMounted(() => {
         <el-checkbox v-model="lowOnly">只看低库存（{{ lowCount }}）</el-checkbox>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="search()">查询</el-button>
+        <el-button type="primary" @click="onSearch()">查询</el-button>
       </el-form-item>
     </el-form>
   </section>

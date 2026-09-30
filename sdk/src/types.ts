@@ -1,4 +1,4 @@
-export type ErrorType = 'js' | 'promise' | 'resource' | 'blank'
+export type ErrorType = 'js' | 'promise' | 'resource' | 'blank' | 'api'
 export type MetricName = 'FCP' | 'LCP' | 'INP' | 'CLS'
 
 export interface MonitorEvent {

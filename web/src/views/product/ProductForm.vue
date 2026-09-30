@@ -133,8 +133,11 @@ function submit() {
       <el-form-item label="价格">
         <el-input-number v-model="form.price" :min="0" :precision="2" />
       </el-form-item>
-      <el-form-item label="库存">
+      <el-form-item v-if="productId == null" label="库存">
         <el-input-number v-model="form.stock" :min="0" :step="1" />
+      </el-form-item>
+      <el-form-item v-else label="库存">
+        <span>请到库存管理里出入库，这里不能直接改数量</span>
       </el-form-item>
       <el-form-item label="预警值">
         <el-input-number v-model="form.warningStock" :min="0" :step="1" />

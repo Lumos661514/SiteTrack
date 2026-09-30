@@ -179,13 +179,12 @@ productRouter.put(
     }
     const [result] = await pool.query<ResultSetHeader>(
       `UPDATE products
-       SET category_id = ?, name = ?, price = ?, stock = ?, warning_stock = ?, cover = ?, status = ?, specs = ?
+       SET category_id = ?, name = ?, price = ?, warning_stock = ?, cover = ?, status = ?, specs = ?
        WHERE id = ?`,
       [
         input.categoryId,
         input.name,
         input.price,
-        input.stock,
         input.warningStock,
         input.cover,
         input.status,
@@ -237,5 +236,12 @@ async function insertOrUpdate(input: ProductInput) {
       JSON.stringify(input.specs),
     ],
   )
+  if (input.stock > 0) {
+    await pool.query(
+      `INSERT INTO stock_logs (product_id, type, quantity, remark, created_at)
+       VALUES (?, 'in', ?, '初始入库', NOW())`,
+      [result.insertId, input.stock],
+    )
+  }
   return result.insertId
 }

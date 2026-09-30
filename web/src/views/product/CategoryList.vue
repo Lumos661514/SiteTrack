@@ -11,17 +11,24 @@ import {
 import { useTable } from '@/composables/useTable'
 
 const keyword = shallowRef('')
+const appliedKeyword = shallowRef('')
 const visible = shallowRef(false)
 const saving = shallowRef(false)
 const editingId = shallowRef<number | null>(null)
 const form = reactive({ name: '', sort: 0 })
 
 const { list, total, page, pageSize, loading, load, search, changePage } = useTable<Category>(
-  (pageNo, size) => fetchCategories(keyword.value, pageNo, size),
+  (pageNo, size) => fetchCategories(appliedKeyword.value, pageNo, size),
 )
+
+function onSearch() {
+  appliedKeyword.value = keyword.value
+  return search()
+}
 
 function reset() {
   keyword.value = ''
+  appliedKeyword.value = ''
   return search()
 }
 
@@ -69,12 +76,12 @@ onMounted(() => {
 
 <template>
   <section class="panel">
-    <el-form inline @submit.prevent="search()">
+    <el-form inline @submit.prevent="onSearch()">
       <el-form-item label="分类名称">
         <el-input v-model="keyword" clearable placeholder="名称" />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="search()">查询</el-button>
+        <el-button type="primary" @click="onSearch()">查询</el-button>
         <el-button @click="reset">重置</el-button>
       </el-form-item>
     </el-form>

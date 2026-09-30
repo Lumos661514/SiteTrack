@@ -8,16 +8,23 @@ const props = defineProps<{
 }>()
 
 const type = shallowRef('')
+const appliedType = shallowRef('')
 const typeText: Record<string, string> = {
   js: '脚本错误',
   promise: 'Promise',
   resource: '资源加载',
   blank: '白屏',
+  api: '接口错误',
 }
 
 const { list, total, page, pageSize, loading, load, search, changePage } = useTable<MonitorError>(
-  (pageNo, size) => fetchMonitorErrors(type.value || '', pageNo, size),
+  (pageNo, size) => fetchMonitorErrors(appliedType.value, pageNo, size),
 )
+
+function onSearch() {
+  appliedType.value = type.value || ''
+  return search()
+}
 
 watch(
   () => props.reloadToken,
@@ -35,7 +42,7 @@ onMounted(() => {
   <section class="panel">
     <div class="toolbar">
       <h2>报错列表</h2>
-      <el-select v-model="type" clearable placeholder="全部类型" style="width: 140px" @change="search()">
+      <el-select v-model="type" clearable placeholder="全部类型" style="width: 140px" @change="onSearch()">
         <el-option label="脚本错误" value="js" />
         <el-option label="Promise" value="promise" />
         <el-option label="资源加载" value="resource" />

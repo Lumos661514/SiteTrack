@@ -10,7 +10,7 @@ import { createReporter } from './report'
 import type { MonitorOptions } from './types'
 
 export interface MonitorClient {
-  captureException: (error: unknown) => void
+  captureException: (error: unknown, type?: 'js' | 'api') => void
   flush: () => void
 }
 
