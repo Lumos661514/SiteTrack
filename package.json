@@ -1,0 +1,18 @@
+{
+  "name": "sitetrack",
+  "private": true,
+  "scripts": {
+    "dev": "corepack pnpm --parallel --filter web --filter server dev",
+    "dev:web": "corepack pnpm --filter web dev",
+    "dev:server": "corepack pnpm --filter server dev",
+    "db:init": "corepack pnpm --filter server db:init",
+    "lint": "corepack pnpm --filter web --filter server lint",
+    "build": "corepack pnpm build:sdk && corepack pnpm --filter web build",
+    "build:sdk": "corepack pnpm --filter @sitetrack/sdk build",
+    "typecheck": "corepack pnpm --filter @sitetrack/sdk --filter web --filter server typecheck"
+  },
+  "packageManager": "pnpm@10.15.1",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "vue-demi"]
+  }
+}
