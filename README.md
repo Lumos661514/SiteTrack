@@ -2,6 +2,8 @@
 
 电商运营后台，并接入一个自研的前端监控 SDK。菜单按角色从后端下发，订单列表用自己写的虚拟滚动展示 5 万条数据。
 
+在线演示：http://120.27.130.34
+
 ## 技术栈
 
 - 前端：Vue 3、TypeScript、Vite、Vue Router、Pinia、Element Plus、Axios、ECharts
